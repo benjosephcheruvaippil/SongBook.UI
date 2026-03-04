@@ -540,6 +540,15 @@ p {
   font: inherit;
 }
 
+.modal textarea {
+  width: 100%;
+  border: 1px solid #cdded4;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  resize: vertical;
+}
+
 .modal-actions {
   margin-top: 8px;
   display: flex;

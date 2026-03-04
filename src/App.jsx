@@ -1,14 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  CartesianGrid,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
   BrowserRouter,
   Navigate,
   NavLink,
@@ -20,19 +11,13 @@ import {
   useParams,
 } from "react-router-dom";
 
-const starterAssets = [
-  { id: 1, name: "Fixed Deposit", category: "Debt", value: 250000 },
-  { id: 2, name: "Mutual Funds", category: "Equity", value: 420000 },
-  { id: 3, name: "Non Convertible Debentures", category: "Debt", value: 110000 },
-  { id: 4, name: "Gold", category: "Commodity", value: 185000 },
-  { id: 5, name: "Real Estate", category: "Property", value: 585000 },
-];
-
 const PAGE_SIZE = 5;
-const songs = [
+
+const initialSongList = [
   {
     id: "song-of-hope",
     title: "എൻപേർക്കായ് ജീവൻ വയ്ക്കും",
+    category: "Devotional",
     stanzas: [
       "എൻപേർക്കായ് ജീവൻ വയ്ക്കും പ്രഭോ! നിന്നെ-എന്നുമീ ദാസനോർക്കും",
       "നിൻ കൃപയേറിയ വാക്കിൻ പ്രകാരമിങ്ങത്യന്ത താഴ്മയോടെ എന്റെവൻകടം തീർപ്പാൻ മരിക്കും പ്രഭോ! നിന്നെ എന്നുമീ ദാസനോർക്കും",
@@ -43,6 +28,7 @@ const songs = [
   {
     id: "river-road",
     title: "River Road",
+    category: "Devotional",
     stanzas: [
       "Down the river road we roam,\nClouds above and dust below.\nEvery mile feels close to home,\nWhere old familiar breezes blow.",
       "Lantern skies and silver rain,\nStories shared beside the fire.\nThough we lose and love again,\nStill we walk and never tire.",
@@ -52,6 +38,7 @@ const songs = [
   {
     id: "new-day",
     title: "New Day",
+    category: "Praise",
     stanzas: [
       "Open windows, call the sun,\nToday begins, the race is run.\nLeave behind what weighs you down,\nLift your eyes above the town.",
       "Plant a word, a dream, a seed,\nGive your hands to those in need.\nSmall and steady, bright and true,\nA better world begins with you.",
@@ -60,14 +47,7 @@ const songs = [
   },
 ];
 
-const formatINR = (value) =>
-  new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 0,
-  }).format(value);
-
-function HomePage() {
+function HomePage({ songList }) {
   const navigate = useNavigate();
 
   return (
@@ -80,7 +60,7 @@ function HomePage() {
         </div>
       </div>
       <div className="song-grid">
-        {songs.map((song) => (
+        {songList.map((song) => (
           <button
             key={song.id}
             type="button"
@@ -96,11 +76,11 @@ function HomePage() {
   );
 }
 
-function SongViewerPage() {
+function SongViewerPage({ songList }) {
   const { songId } = useParams();
   const navigate = useNavigate();
   const [stanzaIndex, setStanzaIndex] = useState(0);
-  const song = songs.find((item) => item.id === songId);
+  const song = songList.find((item) => item.id === songId);
 
   useEffect(() => {
     setStanzaIndex(0);
@@ -151,7 +131,6 @@ function SongViewerPage() {
       <p className="song-progress">
         {stanzaIndex + 1} / {song.stanzas.length}
       </p>
-      {/* <h1>{song.title}</h1> */}
       <p className="song-stanza">{song.stanzas[stanzaIndex]}</p>
       <div className="song-controls">
         <button
@@ -179,53 +158,52 @@ function SongViewerPage() {
   );
 }
 
-function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
+function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
+  const navigate = useNavigate();
   const [isModalOpen, setModalOpen] = useState(false);
-  const [editingAssetId, setEditingAssetId] = useState(null);
-  const [assetToDelete, setAssetToDelete] = useState(null);
+  const [editingSongId, setEditingSongId] = useState(null);
+  const [songToDelete, setSongToDelete] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isFilterPanelOpen, setFilterPanelOpen] = useState(false);
   const filterAnchorRef = useRef(null);
+
   const [draftFilter, setDraftFilter] = useState({
-    name: "All",
+    title: "All",
     category: "All",
-    value: "",
   });
   const [appliedFilter, setAppliedFilter] = useState({
-    name: "All",
+    title: "All",
     category: "All",
-    value: "",
-  });
-  const [formData, setFormData] = useState({
-    name: "",
-    category: "",
-    value: "",
   });
 
-  const availableNames = useMemo(
-    () => ["All", ...new Set(assets.map((asset) => asset.name).filter(Boolean))],
-    [assets]
+  const [formData, setFormData] = useState({
+    title: "",
+    category: "",
+    stanzasText: "",
+  });
+
+  const availableTitles = useMemo(
+    () => ["All", ...new Set(songList.map((song) => song.title).filter(Boolean))],
+    [songList]
   );
 
   const availableCategories = useMemo(
-    () => ["All", ...new Set(assets.map((asset) => asset.category).filter(Boolean))],
-    [assets]
+    () => ["All", ...new Set(songList.map((song) => song.category).filter(Boolean))],
+    [songList]
   );
 
-  const filteredAssets = useMemo(() => {
-    const valueQuery = appliedFilter.value.trim();
-    return assets.filter((asset) => {
-      const matchesName = appliedFilter.name === "All" || asset.name === appliedFilter.name;
+  const filteredSongs = useMemo(() => {
+    return songList.filter((song) => {
+      const matchesTitle = appliedFilter.title === "All" || song.title === appliedFilter.title;
       const matchesCategory =
-        appliedFilter.category === "All" || asset.category === appliedFilter.category;
-      const matchesValue = valueQuery.length === 0 || String(asset.value).includes(valueQuery);
-      return matchesName && matchesCategory && matchesValue;
+        appliedFilter.category === "All" || song.category === appliedFilter.category;
+      return matchesTitle && matchesCategory;
     });
-  }, [assets, appliedFilter]);
+  }, [songList, appliedFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredAssets.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredSongs.length / PAGE_SIZE));
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedAssets = filteredAssets.slice(startIndex, startIndex + PAGE_SIZE);
+  const paginatedSongs = filteredSongs.slice(startIndex, startIndex + PAGE_SIZE);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -269,71 +247,71 @@ function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
   };
 
   const resetFilter = () => {
-    const initialFilter = { name: "All", category: "All", value: "" };
+    const initialFilter = { title: "All", category: "All" };
     setDraftFilter(initialFilter);
     setAppliedFilter(initialFilter);
     setCurrentPage(1);
   };
 
-  const submitAsset = (event) => {
-    event.preventDefault();
-    const trimmedName = formData.name.trim();
-    const trimmedCategory = formData.category.trim();
-    const numericValue = Number(formData.value);
+  const openAddModal = () => {
+    setFormData({ title: "", category: "", stanzasText: "" });
+    setEditingSongId(null);
+    setModalOpen(true);
+  };
 
-    if (!trimmedName || !trimmedCategory || Number.isNaN(numericValue) || numericValue <= 0) {
+  const openEditModal = (song) => {
+    setFormData({
+      title: song.title,
+      category: song.category,
+      stanzasText: song.stanzas.join("\n\n"),
+    });
+    setEditingSongId(song.id);
+    setModalOpen(true);
+  };
+
+  const closeSongModal = () => {
+    setModalOpen(false);
+    setEditingSongId(null);
+    setFormData({ title: "", category: "", stanzasText: "" });
+  };
+
+  const submitSong = (event) => {
+    event.preventDefault();
+    const trimmedTitle = formData.title.trim();
+    const trimmedCategory = formData.category.trim();
+    const parsedStanzas = formData.stanzasText
+      .split(/\n\s*\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+
+    if (!trimmedTitle || !trimmedCategory || parsedStanzas.length === 0) {
       return;
     }
 
-    if (editingAssetId === null) {
-      onAddAsset({
-        id: Date.now(),
-        name: trimmedName,
+    if (editingSongId === null) {
+      onAddSong({
+        id: `${trimmedTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
+        title: trimmedTitle,
         category: trimmedCategory,
-        value: numericValue,
+        stanzas: parsedStanzas,
       });
-      setCurrentPage(Math.ceil((assets.length + 1) / PAGE_SIZE));
     } else {
-      onSaveAsset({
-        id: editingAssetId,
-        name: trimmedName,
+      onSaveSong({
+        id: editingSongId,
+        title: trimmedTitle,
         category: trimmedCategory,
-        value: numericValue,
+        stanzas: parsedStanzas,
       });
     }
 
-    setFormData({ name: "", category: "", value: "" });
-    setEditingAssetId(null);
-    setModalOpen(false);
-  };
-
-  const openAddModal = () => {
-    setFormData({ name: "", category: "", value: "" });
-    setEditingAssetId(null);
-    setModalOpen(true);
-  };
-
-  const openEditModal = (asset) => {
-    setFormData({
-      name: asset.name,
-      category: asset.category,
-      value: String(asset.value),
-    });
-    setEditingAssetId(asset.id);
-    setModalOpen(true);
-  };
-
-  const closeAssetModal = () => {
-    setModalOpen(false);
-    setEditingAssetId(null);
-    setFormData({ name: "", category: "", value: "" });
+    closeSongModal();
   };
 
   return (
     <section className="page">
       <div className="panel asset-header">
         <div>
-          <p className="eyebrow">Songs</p>
+          <p className="eyebrow">Song Inventory</p>
           <h1>Your Songs</h1>
         </div>
         <button className="btn-primary" onClick={openAddModal}>
@@ -349,27 +327,27 @@ function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
               className="btn-ghost filter-toggle"
               onClick={() => setFilterPanelOpen((open) => !open)}
               aria-expanded={isFilterPanelOpen}
-              aria-controls="assetsFilterPanel"
+              aria-controls="songFilterPanel"
             >
               Filter
             </button>
 
             {isFilterPanelOpen ? (
               <form
-                id="assetsFilterPanel"
+                id="songFilterPanel"
                 className="filter-popover"
                 onSubmit={(event) => event.preventDefault()}
               >
-                <label htmlFor="filterName">Name</label>
+                <label htmlFor="filterTitle">Song Name</label>
                 <select
-                  id="filterName"
-                  name="name"
-                  value={draftFilter.name}
+                  id="filterTitle"
+                  name="title"
+                  value={draftFilter.title}
                   onChange={handleFilterChange}
                 >
-                  {availableNames.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
+                  {availableTitles.map((title) => (
+                    <option key={title} value={title}>
+                      {title}
                     </option>
                   ))}
                 </select>
@@ -388,16 +366,6 @@ function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
                   ))}
                 </select>
 
-                <label htmlFor="filterValue">Value</label>
-                <input
-                  id="filterValue"
-                  name="value"
-                  type="text"
-                  placeholder="Enter value"
-                  value={draftFilter.value}
-                  onChange={handleFilterChange}
-                />
-
                 <div className="filter-actions">
                   <button type="button" className="btn-primary" onClick={applyFilter}>
                     Apply
@@ -415,18 +383,19 @@ function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
           <div className="table-head">
             <span>Song Name</span>
             <span>Category</span>
-            <span>Value</span>
+            <span>Stanzas</span>
             <span>Action</span>
           </div>
-          {paginatedAssets.map((asset) => (
-            <div className="table-row" key={asset.id}>
-              <span>{asset.name}</span>
-              <span>{asset.category}</span>
-              <strong>{formatINR(asset.value)}</strong>
+          {paginatedSongs.map((song) => (
+            <div className="table-row" key={song.id}>
+              <span>{song.title}</span>
+              <span>{song.category}</span>
+              <strong>{song.stanzas.length}</strong>
               <div className="action-group">
                 <button
                   type="button"
                   className="btn-primary action-btn"
+                  onClick={() => navigate(`/songs/${song.id}`)}
                 >
                   Present
                 </button>
@@ -434,14 +403,14 @@ function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
                   <button
                     type="button"
                     className="btn-ghost action-btn"
-                    onClick={() => openEditModal(asset)}
+                    onClick={() => openEditModal(song)}
                   >
                     Edit
                   </button>
                   <button
                     type="button"
                     className="btn-danger action-btn"
-                    onClick={() => setAssetToDelete(asset)}
+                    onClick={() => setSongToDelete(song)}
                   >
                     Delete
                   </button>
@@ -449,10 +418,11 @@ function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
               </div>
             </div>
           ))}
-          {paginatedAssets.length === 0 ? (
-            <div className="table-empty">No assets match the current filters.</div>
+          {paginatedSongs.length === 0 ? (
+            <div className="table-empty">No songs match the current filters.</div>
           ) : null}
         </div>
+
         <div className="pagination">
           <button
             type="button"
@@ -490,14 +460,15 @@ function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
 
       {isModalOpen ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
-          <form className="modal" onSubmit={submitAsset}>
-            <h2>{editingAssetId === null ? "Add New Song" : "Edit Song"}</h2>
-            <label htmlFor="name">Song Name</label>
+          <form className="modal" onSubmit={submitSong}>
+            <h2>{editingSongId === null ? "Add New Song" : "Edit Song"}</h2>
+
+            <label htmlFor="title">Song Name</label>
             <input
-              id="name"
-              name="name"
-              placeholder="e.g. Sovereign Gold Bond"
-              value={formData.name}
+              id="title"
+              name="title"
+              placeholder="e.g. Amazing Grace"
+              value={formData.title}
               onChange={handleChange}
               required
             />
@@ -506,53 +477,52 @@ function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
             <input
               id="category"
               name="category"
-              placeholder="e.g. Commodity"
+              placeholder="e.g. Worship"
               value={formData.category}
               onChange={handleChange}
               required
             />
 
-            <label htmlFor="value">Value (INR)</label>
-            <input
-              id="value"
-              name="value"
-              type="number"
-              min="1"
-              placeholder="e.g. 50000"
-              value={formData.value}
+            <label htmlFor="stanzasText">Stanzas</label>
+            <textarea
+              id="stanzasText"
+              name="stanzasText"
+              placeholder="Enter stanzas. Keep a blank line between stanzas."
+              value={formData.stanzasText}
               onChange={handleChange}
+              rows={8}
               required
             />
 
             <div className="modal-actions">
-              <button type="button" className="btn-ghost" onClick={closeAssetModal}>
+              <button type="button" className="btn-ghost" onClick={closeSongModal}>
                 Cancel
               </button>
               <button type="submit" className="btn-primary">
-                {editingAssetId === null ? "Save Song" : "Update Song"}
+                {editingSongId === null ? "Save Song" : "Update Song"}
               </button>
             </div>
           </form>
         </div>
       ) : null}
 
-      {assetToDelete ? (
+      {songToDelete ? (
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal">
-            <h2>Delete Asset</h2>
+            <h2>Delete Song</h2>
             <p>
-              Are you sure you want to delete <strong>{assetToDelete.name}</strong>?
+              Are you sure you want to delete <strong>{songToDelete.title}</strong>?
             </p>
             <div className="modal-actions">
-              <button type="button" className="btn-ghost" onClick={() => setAssetToDelete(null)}>
+              <button type="button" className="btn-ghost" onClick={() => setSongToDelete(null)}>
                 No
               </button>
               <button
                 type="button"
                 className="btn-danger"
                 onClick={() => {
-                  onDeleteAsset(assetToDelete.id);
-                  setAssetToDelete(null);
+                  onDeleteSong(songToDelete.id);
+                  setSongToDelete(null);
                 }}
               >
                 Yes
@@ -564,54 +534,13 @@ function AssetsPage({ assets, onAddAsset, onSaveAsset, onDeleteAsset }) {
     </section>
   );
 }
-function IncomeExpensePage() {
-
-    return (
-      <section className="page">
-        <h2>Income & Expense Page</h2>
-      </section>
-    );
-
-}
-
-function SectionStubPage({ title, description }) {
-  return (
-    <section className="page">
-      <div className="panel">
-        <p className="eyebrow">Assets</p>
-        <h1>{title}</h1>
-        <p className="muted">{description}</p>
-      </div>
-    </section>
-  );
-}
 
 function AppLayout({ isNavOpen, setNavOpen, isNavCollapsed, setNavCollapsed }) {
   const location = useLocation();
-  const inAssetsSection = location.pathname.startsWith("/assets");
-  const inIncomeExpenseSection = location.pathname.startsWith("/income-expense");
-  const [isIncomeExpenseExpanded, setIncomeExpenseExpanded] = useState(
-    inIncomeExpenseSection
-  );
-  const [isAssetsExpanded, setAssetsExpanded] = useState(
-    inAssetsSection
-  );
 
   useEffect(() => {
     setNavOpen(false);
   }, [location.pathname, setNavOpen]);
-
-  useEffect(() => {
-    if (inIncomeExpenseSection) {
-      setIncomeExpenseExpanded(true);
-    }
-  }, [inIncomeExpenseSection]);
-
-  useEffect(() => {
-    if (inAssetsSection) {
-      setAssetsExpanded(true);
-    }
-  }, [inAssetsSection]);
 
   return (
     <div className={`app-shell ${isNavCollapsed ? "collapsed" : ""}`}>
@@ -638,78 +567,12 @@ function AppLayout({ isNavOpen, setNavOpen, isNavCollapsed, setNavCollapsed }) {
             <NavLink to="/" end className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
               Home
             </NavLink>
-
-            <NavLink to="/songList" className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
+            <NavLink
+              to="/songList"
+              className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+            >
               Song List
             </NavLink>
-
-            {/* <div
-              className="nav-group"
-            >
-              <button
-                type="button"
-                className="nav-item"
-                aria-expanded={isIncomeExpenseExpanded}
-                onClick={() => setIncomeExpenseExpanded((expanded) => !expanded)}
-              >
-                Income & Expense
-              </button>
-
-              {isIncomeExpenseExpanded ? (
-                <div className="nav-submenu">
-                  <NavLink
-                    to="/income-expense/reports"
-                    className={({ isActive }) => `nav-item nav-subitem ${isActive ? "active" : ""}`}
-                  >
-                    Reports
-                  </NavLink>
-                  <NavLink
-                    to="/income-expense/expense"
-                    className={({ isActive }) => `nav-item nav-subitem ${isActive ? "active" : ""}`}
-                  >
-                    Expense
-                  </NavLink>
-                  <NavLink
-                    to="/income-expense/income"
-                    className={({ isActive }) => `nav-item nav-subitem ${isActive ? "active" : ""}`}
-                  >
-                    Income
-                  </NavLink>
-                </div>
-              ) : null}
-            </div> */}
-
-            {/* <div
-              className="nav-group"
-            >
-              <button
-                type="button"
-                className="nav-item"
-                aria-expanded={isAssetsExpanded}
-                onClick={() => setAssetsExpanded((expanded) => !expanded)}
-              >
-                Assets
-              </button>
-
-              {isAssetsExpanded ? (
-                <div className="nav-submenu">
-                  <NavLink
-                    to="/assets"
-                    end
-                    className={({ isActive }) => `nav-item nav-subitem ${isActive ? "active" : ""}`}
-                  >
-                    Assets
-                  </NavLink>
-                  <NavLink
-                    to="/assets/reports"
-                    className={({ isActive }) => `nav-item nav-subitem ${isActive ? "active" : ""}`}
-                  >
-                    Reports
-                  </NavLink>
-                </div>
-              ) : null}
-            </div> */}
-
           </nav>
         ) : null}
       </aside>
@@ -723,26 +586,26 @@ function AppLayout({ isNavOpen, setNavOpen, isNavCollapsed, setNavCollapsed }) {
 export default function App() {
   const [isNavOpen, setNavOpen] = useState(false);
   const [isNavCollapsed, setNavCollapsed] = useState(false);
-  const [assets, setAssets] = useState(starterAssets);
+  const [songList, setSongList] = useState(initialSongList);
 
-  const addAsset = (asset) => {
-    setAssets((previous) => [...previous, asset]);
+  const addSong = (song) => {
+    setSongList((previous) => [...previous, song]);
   };
 
-  const saveAsset = (updatedAsset) => {
-    setAssets((previous) =>
-      previous.map((asset) => (asset.id === updatedAsset.id ? updatedAsset : asset))
+  const saveSong = (updatedSong) => {
+    setSongList((previous) =>
+      previous.map((song) => (song.id === updatedSong.id ? updatedSong : song))
     );
   };
 
-  const deleteAsset = (assetId) => {
-    setAssets((previous) => previous.filter((asset) => asset.id !== assetId));
+  const deleteSong = (songId) => {
+    setSongList((previous) => previous.filter((song) => song.id !== songId));
   };
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/songs/:songId" element={<SongViewerPage />} />
+        <Route path="/songs/:songId" element={<SongViewerPage songList={songList} />} />
         <Route
           path="/"
           element={
@@ -754,60 +617,20 @@ export default function App() {
             />
           }
         >
-          <Route index element={<HomePage />} />
-          <Route path="home" element={<HomePage />} />
-          <Route path="songList" element={<AssetsPage assets={assets}
-                onAddAsset={addAsset}
-                onSaveAsset={saveAsset}
-                onDeleteAsset={deleteAsset}/>} />
-          <Route path="income-expense" element={<IncomeExpensePage />} />
+          <Route index element={<HomePage songList={songList} />} />
+          <Route path="home" element={<HomePage songList={songList} />} />
           <Route
-            path="income-expense/reports"
+            path="songList"
             element={
-              <SectionStubPage
-                title="Reports"
-                description="Income & Expense reports to analyze your cash flow patterns and identify areas for optimization."
+              <SongListPage
+                songList={songList}
+                onAddSong={addSong}
+                onSaveSong={saveSong}
+                onDeleteSong={deleteSong}
               />
             }
           />
-          <Route
-            path="income-expense/expense"
-            element={
-              <SectionStubPage
-                title="Expense"
-                description="Track and review expense entries to control spending and improve budgeting."
-              />
-            }
-          />
-          <Route
-            path="income-expense/income"
-            element={
-              <SectionStubPage
-                title="Income"
-                description="Track and review income entries to understand cash inflows and growth trends."
-              />
-            }
-          />
-          <Route
-            path="assets"
-            element={
-              <AssetsPage
-                assets={assets}
-                onAddAsset={addAsset}
-                onSaveAsset={saveAsset}
-                onDeleteAsset={deleteAsset}
-              />
-            }
-          />
-          <Route
-            path="assets/reports"
-            element={
-              <SectionStubPage
-                title="Reports"
-                description="Generate and review reports for your asset portfolio performance."
-              />
-            }
-          />
+          <Route path="assets" element={<Navigate to="/songList" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>
