@@ -123,9 +123,18 @@ function SongViewerPage({ songList }) {
     return <Navigate to="/" replace />;
   }
 
+  const handleBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+
+    navigate("/");
+  };
+
   return (
     <section className="song-viewer">
-      <button type="button" className="btn-ghost song-close" onClick={() => navigate("/")}>
+      <button type="button" className="btn-ghost song-close" onClick={handleBack}>
         Back
       </button>
       <p className="song-progress">
