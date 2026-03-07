@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -12,40 +12,9 @@ import {
 } from "react-router-dom";
 
 const PAGE_SIZE = 5;
+const SONGS_API_URL = "/api/SongBook/songs?pageNo=1";
 
-const initialSongList = [
-  {
-    id: "song-of-hope",
-    title: "എൻപേർക്കായ് ജീവൻ വയ്ക്കും",
-    category: "Devotional",
-    stanzas: [
-      "എൻപേർക്കായ് ജീവൻ വയ്ക്കും പ്രഭോ! നിന്നെ-എന്നുമീ ദാസനോർക്കും",
-      "നിൻ കൃപയേറിയ വാക്കിൻ പ്രകാരമിങ്ങത്യന്ത താഴ്മയോടെ എന്റെവൻകടം തീർപ്പാൻ മരിക്കും പ്രഭോ! നിന്നെ എന്നുമീ ദാസനോർക്കും",
-      "എന്നുടെ പേർക്കായ് നുറുങ്ങിയ നിന്നുടൽ സ്വർഭോജ്യമത്രേ മമ നിന്റെ പൊന്നുനിയമത്തിൻ പാത്രമെടുത്തിപ്പോൾ നിന്നെ ഞാനോർക്കുന്നിതാ",
-      "ഗത്സമനേയിടം ഞാൻ മറന്നിടുമോ നിൻവ്യഥയൊക്കെയെയും നിന്റെ സങ്കടം രക്തവിയർപ്പെന്നിവയൊരു നാളും മറക്കുമോ ഞാൻ"
-    ],
-  },
-  {
-    id: "river-road",
-    title: "River Road",
-    category: "Devotional",
-    stanzas: [
-      "Down the river road we roam,\nClouds above and dust below.\nEvery mile feels close to home,\nWhere old familiar breezes blow.",
-      "Lantern skies and silver rain,\nStories shared beside the fire.\nThough we lose and love again,\nStill we walk and never tire.",
-      "If the night becomes too wide,\nHold this song and hear it clear.\nStep by step and side by side,\nMorning always meets us here.",
-    ],
-  },
-  {
-    id: "new-day",
-    title: "New Day",
-    category: "Praise",
-    stanzas: [
-      "Open windows, call the sun,\nToday begins, the race is run.\nLeave behind what weighs you down,\nLift your eyes above the town.",
-      "Plant a word, a dream, a seed,\nGive your hands to those in need.\nSmall and steady, bright and true,\nA better world begins with you.",
-      "When the evening paints the sky,\nCount the wins that passed you by.\nRest your mind and softly say,\nThank you life for one more day.",
-    ],
-  },
-];
+const initialSongList = [];
 
 function HomePage({ songList }) {
   const navigate = useNavigate();
@@ -80,7 +49,7 @@ function SongViewerPage({ songList }) {
   const { songId } = useParams();
   const navigate = useNavigate();
   const [stanzaIndex, setStanzaIndex] = useState(0);
-  const song = songList.find((item) => item.id === songId);
+  const song = songList.find((item) => String(item.id) === songId);
 
   useEffect(() => {
     setStanzaIndex(0);
@@ -302,6 +271,7 @@ function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
         id: `${trimmedTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
         title: trimmedTitle,
         category: trimmedCategory,
+        stanzaNos: parsedStanzas.length,
         stanzas: parsedStanzas,
       });
     } else {
@@ -309,6 +279,7 @@ function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
         id: editingSongId,
         title: trimmedTitle,
         category: trimmedCategory,
+        stanzaNos: parsedStanzas.length,
         stanzas: parsedStanzas,
       });
     }
@@ -390,16 +361,16 @@ function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
 
         <div className="asset-table">
           <div className="table-head">
-            <span>Song Name</span>
+            <span>Title</span>
             <span>Category</span>
-            <span>Stanzas</span>
+            <span>StanzaNos</span>
             <span>Action</span>
           </div>
           {paginatedSongs.map((song) => (
             <div className="table-row" key={song.id}>
               <span>{song.title}</span>
               <span>{song.category}</span>
-              <strong>{song.stanzas.length}</strong>
+              <strong>{song.stanzaNos ?? song.stanzas.length}</strong>
               <div className="action-group">
                 <button
                   type="button"
@@ -544,7 +515,13 @@ function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
   );
 }
 
-function AppLayout({ isNavOpen, setNavOpen, isNavCollapsed, setNavCollapsed }) {
+function AppLayout({
+  isNavOpen,
+  setNavOpen,
+  isNavCollapsed,
+  setNavCollapsed,
+  onSongsModuleClick,
+}) {
   const location = useLocation();
 
   useEffect(() => {
@@ -573,12 +550,18 @@ function AppLayout({ isNavOpen, setNavOpen, isNavCollapsed, setNavCollapsed }) {
         </div>
         {!isNavCollapsed ? (
           <nav>
-            <NavLink to="/" end className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
+            <NavLink
+              to="/"
+              end
+              className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+              onClick={onSongsModuleClick}
+            >
               Home
             </NavLink>
             <NavLink
               to="/songList"
               className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
+              onClick={onSongsModuleClick}
             >
               Song List
             </NavLink>
@@ -596,6 +579,47 @@ export default function App() {
   const [isNavOpen, setNavOpen] = useState(false);
   const [isNavCollapsed, setNavCollapsed] = useState(false);
   const [songList, setSongList] = useState(initialSongList);
+
+  const fetchSongs = useCallback(async () => {
+    try {
+      const response = await fetch(SONGS_API_URL);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch songs. Status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const mappedSongs = Array.isArray(data)
+        ? data.map((song) => {
+            const songId = song.songId ?? song.SongId;
+            const title = song.title ?? song.Title ?? "";
+            const category = song.category ?? song.Category ?? "";
+            const stanzas = Array.isArray(song.stanzas)
+              ? song.stanzas
+              : Array.isArray(song.Stanzas)
+                ? song.Stanzas
+                : [];
+            const stanzaNosRaw = song.stanzaNos ?? song.StanzaNos;
+            const stanzaNos = Number(stanzaNosRaw);
+
+            return {
+              id: String(songId),
+              title,
+              category,
+              stanzaNos: Number.isNaN(stanzaNos) ? stanzas.length : stanzaNos,
+              stanzas,
+            };
+          })
+        : [];
+
+      setSongList(mappedSongs);
+    } catch (error) {
+      console.error("Failed to fetch songs from API.", error);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSongs();
+  }, [fetchSongs]);
 
   const addSong = (song) => {
     setSongList((previous) => [...previous, song]);
@@ -623,6 +647,7 @@ export default function App() {
               setNavOpen={setNavOpen}
               isNavCollapsed={isNavCollapsed}
               setNavCollapsed={setNavCollapsed}
+              onSongsModuleClick={fetchSongs}
             />
           }
         >
@@ -646,3 +671,4 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
