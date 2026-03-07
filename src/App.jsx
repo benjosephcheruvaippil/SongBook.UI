@@ -79,10 +79,15 @@ function SongViewerPage({ songList }) {
         return;
       }
 
+      const stanzaCount = song.stanzas.length;
+      if (stanzaCount === 0) {
+        return;
+      }
+
       if (event.key === "ArrowDown") {
-        setStanzaIndex((previous) => Math.min(song.stanzas.length - 1, previous + 1));
+        setStanzaIndex((previous) => (previous + 1) % stanzaCount);
       } else if (event.key === "ArrowUp") {
-        setStanzaIndex((previous) => Math.max(0, previous - 1));
+        setStanzaIndex((previous) => (previous - 1 + stanzaCount) % stanzaCount);
       }
     };
 
@@ -93,6 +98,21 @@ function SongViewerPage({ songList }) {
   if (!song) {
     return <Navigate to="/" replace />;
   }
+
+  const stanzaCount = song.stanzas.length;
+  const goToPreviousStanza = () => {
+    if (stanzaCount === 0) {
+      return;
+    }
+    setStanzaIndex((previous) => (previous - 1 + stanzaCount) % stanzaCount);
+  };
+
+  const goToNextStanza = () => {
+    if (stanzaCount === 0) {
+      return;
+    }
+    setStanzaIndex((previous) => (previous + 1) % stanzaCount);
+  };
 
   const handleBack = () => {
     if (window.history.length > 1) {
@@ -116,8 +136,7 @@ function SongViewerPage({ songList }) {
         <button
           type="button"
           className="arrow-btn"
-          onClick={() => setStanzaIndex((previous) => Math.max(0, previous - 1))}
-          disabled={stanzaIndex === 0}
+          onClick={goToPreviousStanza}
           aria-label="Previous stanza"
         >
           ↑
@@ -125,10 +144,7 @@ function SongViewerPage({ songList }) {
         <button
           type="button"
           className="arrow-btn"
-          onClick={() =>
-            setStanzaIndex((previous) => Math.min(song.stanzas.length - 1, previous + 1))
-          }
-          disabled={stanzaIndex === song.stanzas.length - 1}
+          onClick={goToNextStanza}
           aria-label="Next stanza"
         >
           ↓
