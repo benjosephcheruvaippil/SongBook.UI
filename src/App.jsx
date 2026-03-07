@@ -290,6 +290,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
     try {
       await onSubmitSong(payload);
       closeSongModal();
+      setCurrentPage(1);
     } catch (error) {
       console.error("Failed to save song.", error);
     }
@@ -664,7 +665,7 @@ export default function App() {
       throw new Error(`Failed to save song. Status: ${response.status}`);
     }
 
-    await fetchSongs();
+    await fetchSongs(1);
   };
 
   const deleteSong = (songId) => {
