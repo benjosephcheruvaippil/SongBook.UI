@@ -13,6 +13,7 @@ import {
 
 const SONGS_API_URL = "/api/SongBook/songs";
 const SAVE_SONG_API_URL = "/api/SongBook/saveSong";
+const DELETE_SONG_API_URL = "/api/SongBook/deleteSong";
 const DEFAULT_USER_NAME = "Ben Joseph";
 
 const initialSongList = [];
@@ -519,8 +520,8 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
               <button
                 type="button"
                 className="btn-danger"
-                onClick={() => {
-                  onDeleteSong(songToDelete.id);
+                onClick={async () => {
+                  await onDeleteSong(songToDelete.id);
                   setSongToDelete(null);
                 }}
               >
@@ -667,8 +668,15 @@ export default function App() {
     await fetchSongs(1);
   };
 
-  const deleteSong = (songId) => {
-    setSongList((previous) => previous.filter((song) => song.id !== songId));
+  const deleteSong = async (songId) => {
+    const response = await fetch(`${DELETE_SONG_API_URL}?songId=${encodeURIComponent(songId)}`, {
+      method: "DELETE",
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to delete song. Status: ${response.status}`);
+    }
+
+    await fetchSongs(1);
   };
 
   return (
