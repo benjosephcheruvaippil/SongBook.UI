@@ -158,6 +158,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
 
   const [formData, setFormData] = useState({
     title: "",
+    englishTitle: "",
     category: "",
     stanzasText: "",
   });
@@ -234,7 +235,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
   };
 
   const openAddModal = () => {
-    setFormData({ title: "", category: "", stanzasText: "" });
+    setFormData({ title: "", englishTitle: "", category: "", stanzasText: "" });
     setEditingSongId(null);
     setModalOpen(true);
   };
@@ -242,6 +243,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
   const openEditModal = (song) => {
     setFormData({
       title: song.title,
+      englishTitle: song.englishTitle,
       category: song.category,
       stanzasText: song.stanzas.join("\n\n"),
     });
@@ -252,19 +254,20 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
   const closeSongModal = () => {
     setModalOpen(false);
     setEditingSongId(null);
-    setFormData({ title: "", category: "", stanzasText: "" });
+    setFormData({ title: "", englishTitle: "", category: "", stanzasText: "" });
   };
 
   const submitSong = async (event) => {
     event.preventDefault();
     const trimmedTitle = formData.title.trim();
+    const trimmedEnglishTitle = formData.englishTitle.trim();
     const trimmedCategory = formData.category.trim();
     const parsedStanzas = formData.stanzasText
       .split(/\n\s*\n/)
       .map((line) => line.trim())
       .filter(Boolean);
 
-    if (!trimmedTitle || !trimmedCategory || parsedStanzas.length === 0) {
+    if (!trimmedTitle || !trimmedEnglishTitle || !trimmedCategory || parsedStanzas.length === 0) {
       return;
     }
 
@@ -274,7 +277,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
     const payload = {
       songId: editingSongId === null ? 0 : Number.isNaN(parsedSongId) ? editingSongId : parsedSongId,
       title: trimmedTitle,
-      englishTitle: existingSong?.englishTitle ?? "",
+      englishTitle: trimmedEnglishTitle,
       stanzas: parsedStanzas,
       category: trimmedCategory,
       stanzaNos: parsedStanzas.length,
@@ -466,7 +469,17 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
               required
             />
 
-            <label htmlFor="category">Category</label>
+            <label htmlFor="englishTitle">English Title</label>
+            <input
+              id="englishTitle"
+              name="englishTitle"
+              placeholder="e.g. Amazing Grace"
+              value={formData.englishTitle}
+              onChange={handleChange}
+              required
+            />
+
+            {/* <label htmlFor="category">Category</label>
             <input
               id="category"
               name="category"
@@ -474,7 +487,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
               value={formData.category}
               onChange={handleChange}
               required
-            />
+            /> */}
 
             <label htmlFor="stanzasText">Stanzas</label>
             <textarea
