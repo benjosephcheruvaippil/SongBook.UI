@@ -377,7 +377,6 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
             ) : null}
           </div>
         </div>
-        <p className="muted">Total Pages: {totalPages}</p>
 
         <div className="asset-table">
           <div className="table-head">
