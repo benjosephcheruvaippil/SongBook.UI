@@ -265,13 +265,12 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
     event.preventDefault();
     const trimmedTitle = formData.title.trim();
     const trimmedEnglishTitle = formData.englishTitle.trim();
-    const trimmedCategory = formData.category.trim();
     const parsedStanzas = formData.stanzasText
       .split(/\n\s*\n/)
       .map((line) => line.trim())
       .filter(Boolean);
 
-    if (!trimmedTitle || !trimmedEnglishTitle || !trimmedCategory || parsedStanzas.length === 0) {
+    if (!trimmedTitle || !trimmedEnglishTitle || parsedStanzas.length === 0) {
       return;
     }
 
@@ -283,7 +282,6 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
       title: trimmedTitle,
       englishTitle: trimmedEnglishTitle,
       stanzas: parsedStanzas,
-      category: trimmedCategory,
       stanzaNos: parsedStanzas.length,
       createdBy: existingSong?.createdBy ?? DEFAULT_USER_NAME,
       updatedBy: DEFAULT_USER_NAME,
@@ -483,16 +481,6 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
               onChange={handleChange}
               required
             />
-
-            {/* <label htmlFor="category">Category</label>
-            <input
-              id="category"
-              name="category"
-              placeholder="e.g. Worship"
-              value={formData.category}
-              onChange={handleChange}
-              required
-            /> */}
 
             <label htmlFor="stanzasText">Stanzas</label>
             <textarea
