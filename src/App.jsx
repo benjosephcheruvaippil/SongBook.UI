@@ -11,8 +11,7 @@ import {
   useParams,
 } from "react-router-dom";
 
-const PAGE_SIZE = 5;
-const SONGS_API_URL = "/api/SongBook/songs?pageNo=1";
+const SONGS_API_URL = "/api/SongBook/songs";
 const SAVE_SONG_API_URL = "/api/SongBook/saveSong";
 const DEFAULT_USER_NAME = "Ben Joseph";
 
@@ -138,7 +137,7 @@ function SongViewerPage({ songList }) {
   );
 }
 
-function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
+function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, totalPagesFromApi }) {
   const navigate = useNavigate();
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingSongId, setEditingSongId] = useState(null);
@@ -182,9 +181,8 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
     });
   }, [songList, appliedFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredSongs.length / PAGE_SIZE));
-  const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const paginatedSongs = filteredSongs.slice(startIndex, startIndex + PAGE_SIZE);
+  const totalPages = Math.max(1, totalPagesFromApi);
+  const paginatedSongs = filteredSongs;
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -232,6 +230,12 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
     setDraftFilter(initialFilter);
     setAppliedFilter(initialFilter);
     setCurrentPage(1);
+  };
+
+  const goToPage = (pageNumber) => {
+    const targetPage = Math.max(1, Math.min(totalPages, pageNumber));
+    setCurrentPage(targetPage);
+    onFetchSongs(targetPage);
   };
 
   const openAddModal = () => {
@@ -374,6 +378,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
             ) : null}
           </div>
         </div>
+        <p className="muted">Total Pages: {totalPages}</p>
 
         <div className="asset-table">
           <div className="table-head">
@@ -423,7 +428,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
           <button
             type="button"
             className="btn-ghost page-btn"
-            onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
+            onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
           >
             Previous
@@ -436,7 +441,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
                   type="button"
                   key={pageNumber}
                   className={`page-number ${currentPage === pageNumber ? "active" : ""}`}
-                  onClick={() => setCurrentPage(pageNumber)}
+                  onClick={() => goToPage(pageNumber)}
                 >
                   {pageNumber}
                 </button>
@@ -446,7 +451,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
           <button
             type="button"
             className="btn-ghost page-btn"
-            onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
+            onClick={() => goToPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
           >
             Next
@@ -605,17 +610,22 @@ export default function App() {
   const [isNavOpen, setNavOpen] = useState(false);
   const [isNavCollapsed, setNavCollapsed] = useState(false);
   const [songList, setSongList] = useState(initialSongList);
+  const [totalPages, setTotalPages] = useState(1);
 
-  const fetchSongs = useCallback(async () => {
+  const fetchSongs = useCallback(async (pageNo = 1) => {
     try {
-      const response = await fetch(SONGS_API_URL);
+      const response = await fetch(`${SONGS_API_URL}?pageNo=${pageNo}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch songs. Status: ${response.status}`);
       }
 
       const data = await response.json();
-      const mappedSongs = Array.isArray(data)
-        ? data.map((song) => {
+      const songs = Array.isArray(data?.songs) ? data.songs : Array.isArray(data) ? data : [];
+      const totalPagesRaw = Number(data?.totalPages ?? data?.TotalPages);
+      const mappedTotalPages =
+        Number.isNaN(totalPagesRaw) || totalPagesRaw < 1 ? 1 : Math.floor(totalPagesRaw);
+
+      const mappedSongs = songs.map((song) => {
           const songId = song.songId ?? song.SongId;
           const title = song.title ?? song.Title ?? "";
           const englishTitle = song.englishTitle ?? song.EnglishTitle ?? "";
@@ -638,12 +648,14 @@ export default function App() {
             createdBy: song.createdBy ?? song.CreatedBy ?? "",
             updatedBy: song.updatedBy ?? song.UpdatedBy ?? "",
           };
-        })
-        : [];
+        });
 
       setSongList(mappedSongs);
+      setTotalPages(mappedTotalPages);
     } catch (error) {
       console.error("Failed to fetch songs from API.", error);
+      setSongList([]);
+      setTotalPages(1);
     }
   }, []);
 
@@ -683,7 +695,7 @@ export default function App() {
               setNavOpen={setNavOpen}
               isNavCollapsed={isNavCollapsed}
               setNavCollapsed={setNavCollapsed}
-              onSongsModuleClick={fetchSongs}
+              onSongsModuleClick={() => fetchSongs(1)}
             />
           }
         >
@@ -696,6 +708,8 @@ export default function App() {
                 songList={songList}
                 onSubmitSong={saveSong}
                 onDeleteSong={deleteSong}
+                onFetchSongs={fetchSongs}
+                totalPagesFromApi={totalPages}
               />
             }
           />
