@@ -26,7 +26,7 @@ function HomePage({ songList }) {
       <div className="panel hero">
         <div>
           <p className="eyebrow">Song Collection</p>
-          <h1>Select a song</h1>
+          <h1>Favs</h1>
           <p className="muted">Click a song card to open full-screen stanza mode.</p>
         </div>
       </div>
