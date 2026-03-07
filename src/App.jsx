@@ -287,6 +287,16 @@ function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
     closeSongModal();
   };
 
+  const handlePresentSong = (song) => {
+    const stanzas = song?.stanzas;
+    if (stanzas.length === 0) {
+      alert("This song has no valid stanzas to present.");
+      return;
+    }
+
+    navigate(`/songs/${song.id}`);
+  };
+
   return (
     <section className="page">
       <div className="panel asset-header">
@@ -375,7 +385,7 @@ function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
                 <button
                   type="button"
                   className="btn-primary action-btn"
-                  onClick={() => navigate(`/songs/${song.id}`)}
+                  onClick={() => handlePresentSong(song)}
                 >
                   Present
                 </button>
