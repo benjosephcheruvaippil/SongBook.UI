@@ -13,6 +13,8 @@ import {
 
 const PAGE_SIZE = 5;
 const SONGS_API_URL = "/api/SongBook/songs?pageNo=1";
+const SAVE_SONG_API_URL = "/api/SongBook/saveSong";
+const DEFAULT_USER_NAME = "Ben Joseph";
 
 const initialSongList = [];
 
@@ -136,7 +138,7 @@ function SongViewerPage({ songList }) {
   );
 }
 
-function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
+function SongListPage({ songList, onSubmitSong, onDeleteSong }) {
   const navigate = useNavigate();
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingSongId, setEditingSongId] = useState(null);
@@ -253,7 +255,7 @@ function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
     setFormData({ title: "", category: "", stanzasText: "" });
   };
 
-  const submitSong = (event) => {
+  const submitSong = async (event) => {
     event.preventDefault();
     const trimmedTitle = formData.title.trim();
     const trimmedCategory = formData.category.trim();
@@ -266,25 +268,26 @@ function SongListPage({ songList, onAddSong, onSaveSong, onDeleteSong }) {
       return;
     }
 
-    if (editingSongId === null) {
-      onAddSong({
-        id: `${trimmedTitle.toLowerCase().replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
-        title: trimmedTitle,
-        category: trimmedCategory,
-        stanzaNos: parsedStanzas.length,
-        stanzas: parsedStanzas,
-      });
-    } else {
-      onSaveSong({
-        id: editingSongId,
-        title: trimmedTitle,
-        category: trimmedCategory,
-        stanzaNos: parsedStanzas.length,
-        stanzas: parsedStanzas,
-      });
-    }
+    const existingSong =
+      editingSongId === null ? null : songList.find((song) => song.id === editingSongId);
+    const parsedSongId = Number(editingSongId);
+    const payload = {
+      songId: editingSongId === null ? 0 : Number.isNaN(parsedSongId) ? editingSongId : parsedSongId,
+      title: trimmedTitle,
+      englishTitle: existingSong?.englishTitle ?? "",
+      stanzas: parsedStanzas,
+      category: trimmedCategory,
+      stanzaNos: parsedStanzas.length,
+      createdBy: existingSong?.createdBy ?? DEFAULT_USER_NAME,
+      updatedBy: DEFAULT_USER_NAME,
+    };
 
-    closeSongModal();
+    try {
+      await onSubmitSong(payload);
+      closeSongModal();
+    } catch (error) {
+      console.error("Failed to save song.", error);
+    }
   };
 
   const handlePresentSong = (song) => {
@@ -600,25 +603,29 @@ export default function App() {
       const data = await response.json();
       const mappedSongs = Array.isArray(data)
         ? data.map((song) => {
-            const songId = song.songId ?? song.SongId;
-            const title = song.title ?? song.Title ?? "";
-            const category = song.category ?? song.Category ?? "";
-            const stanzas = Array.isArray(song.stanzas)
-              ? song.stanzas
-              : Array.isArray(song.Stanzas)
-                ? song.Stanzas
-                : [];
+          const songId = song.songId ?? song.SongId;
+          const title = song.title ?? song.Title ?? "";
+          const englishTitle = song.englishTitle ?? song.EnglishTitle ?? "";
+          const category = song.category ?? song.Category ?? "";
+          const stanzas = Array.isArray(song.stanzas)
+            ? song.stanzas
+            : Array.isArray(song.Stanzas)
+              ? song.Stanzas
+              : [];
             const stanzaNosRaw = song.stanzaNos ?? song.StanzaNos;
             const stanzaNos = Number(stanzaNosRaw);
 
-            return {
-              id: String(songId),
-              title,
-              category,
-              stanzaNos: Number.isNaN(stanzaNos) ? stanzas.length : stanzaNos,
-              stanzas,
-            };
-          })
+          return {
+            id: String(songId),
+            title,
+            englishTitle,
+            category,
+            stanzaNos: Number.isNaN(stanzaNos) ? stanzas.length : stanzaNos,
+            stanzas,
+            createdBy: song.createdBy ?? song.CreatedBy ?? "",
+            updatedBy: song.updatedBy ?? song.UpdatedBy ?? "",
+          };
+        })
         : [];
 
       setSongList(mappedSongs);
@@ -631,14 +638,20 @@ export default function App() {
     fetchSongs();
   }, [fetchSongs]);
 
-  const addSong = (song) => {
-    setSongList((previous) => [...previous, song]);
-  };
+  const saveSong = async (payload) => {
+    const response = await fetch(SAVE_SONG_API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
 
-  const saveSong = (updatedSong) => {
-    setSongList((previous) =>
-      previous.map((song) => (song.id === updatedSong.id ? updatedSong : song))
-    );
+    if (!response.ok) {
+      throw new Error(`Failed to save song. Status: ${response.status}`);
+    }
+
+    await fetchSongs();
   };
 
   const deleteSong = (songId) => {
@@ -668,8 +681,7 @@ export default function App() {
             element={
               <SongListPage
                 songList={songList}
-                onAddSong={addSong}
-                onSaveSong={saveSong}
+                onSubmitSong={saveSong}
                 onDeleteSong={deleteSong}
               />
             }
