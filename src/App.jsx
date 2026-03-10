@@ -524,6 +524,7 @@ function AppLayout({
   isNavCollapsed,
   setNavCollapsed,
   onSongsModuleClick,
+  isLoading,
 }) {
   const location = useLocation();
 
@@ -574,6 +575,11 @@ function AppLayout({
       <main className="content">
         <Outlet />
       </main>
+      {isLoading ? (
+        <div className="app-loader" role="status" aria-live="polite" aria-label="Loading">
+          <div className="spinner" />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -584,8 +590,18 @@ export default function App() {
   const [songList, setSongList] = useState(initialSongList);
   const [totalPages, setTotalPages] = useState(1);
   const [currentSearchText, setCurrentSearchText] = useState("");
+  const [pendingRequests, setPendingRequests] = useState(0);
+
+  const startRequest = useCallback(() => {
+    setPendingRequests((count) => count + 1);
+  }, []);
+
+  const endRequest = useCallback(() => {
+    setPendingRequests((count) => Math.max(0, count - 1));
+  }, []);
 
   const fetchSongs = useCallback(async (pageNo = 1, searchText = "") => {
+    startRequest();
     try {
       const params = new URLSearchParams({
         pageNo: String(pageNo),
@@ -633,14 +649,17 @@ export default function App() {
       console.error("Failed to fetch songs from API.", error);
       setSongList([]);
       setTotalPages(1);
+    } finally {
+      endRequest();
     }
-  }, []);
+  }, [endRequest, startRequest]);
 
   useEffect(() => {
     fetchSongs(1, currentSearchText);
   }, [fetchSongs, currentSearchText]);
 
   const saveSong = async (payload) => {
+    startRequest();
     const response = await fetch(SAVE_SONG_API_URL, {
       method: "POST",
       headers: {
@@ -650,21 +669,26 @@ export default function App() {
     });
 
     if (!response.ok) {
+      endRequest();
       throw new Error(`Failed to save song. Status: ${response.status}`);
     }
 
     await fetchSongs(1, currentSearchText);
+    endRequest();
   };
 
   const deleteSong = async (songId) => {
+    startRequest();
     const response = await fetch(`${DELETE_SONG_API_URL}?songId=${encodeURIComponent(songId)}`, {
       method: "DELETE",
     });
     if (!response.ok) {
+      endRequest();
       throw new Error(`Failed to delete song. Status: ${response.status}`);
     }
 
     await fetchSongs(1, currentSearchText);
+    endRequest();
   };
 
   return (
@@ -680,6 +704,7 @@ export default function App() {
               isNavCollapsed={isNavCollapsed}
               setNavCollapsed={setNavCollapsed}
               onSongsModuleClick={() => fetchSongs(1, currentSearchText)}
+              isLoading={pendingRequests > 0}
             />
           }
         >
