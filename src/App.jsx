@@ -186,6 +186,14 @@ function SongListPage({
   const paginatedSongs = songList;
 
   useEffect(() => {
+    const initialFilter = { englishTitle: "" };
+    setDraftFilter(initialFilter);
+    setCurrentPage(1);
+    onSearchTextChange("");
+    onFetchSongs(1, "");
+  }, [onFetchSongs, onSearchTextChange]);
+
+  useEffect(() => {
     if (currentPage > totalPages) {
       setCurrentPage(totalPages);
     }
