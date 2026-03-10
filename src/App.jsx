@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BrowserRouter,
   Navigate,
@@ -154,7 +154,15 @@ function SongViewerPage({ songList }) {
   );
 }
 
-function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, totalPagesFromApi }) {
+function SongListPage({
+  songList,
+  onSubmitSong,
+  onDeleteSong,
+  onFetchSongs,
+  onSearchTextChange,
+  searchText,
+  totalPagesFromApi,
+}) {
   const navigate = useNavigate();
   const [isModalOpen, setModalOpen] = useState(false);
   const [editingSongId, setEditingSongId] = useState(null);
@@ -164,12 +172,7 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
   const filterAnchorRef = useRef(null);
 
   const [draftFilter, setDraftFilter] = useState({
-    title: "All",
-    category: "All",
-  });
-  const [appliedFilter, setAppliedFilter] = useState({
-    title: "All",
-    category: "All",
+    englishTitle: searchText ?? "",
   });
 
   const [formData, setFormData] = useState({
@@ -179,27 +182,8 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
     stanzasText: "",
   });
 
-  const availableTitles = useMemo(
-    () => ["All", ...new Set(songList.map((song) => song.title).filter(Boolean))],
-    [songList]
-  );
-
-  const availableCategories = useMemo(
-    () => ["All", ...new Set(songList.map((song) => song.category).filter(Boolean))],
-    [songList]
-  );
-
-  const filteredSongs = useMemo(() => {
-    return songList.filter((song) => {
-      const matchesTitle = appliedFilter.title === "All" || song.title === appliedFilter.title;
-      const matchesCategory =
-        appliedFilter.category === "All" || song.category === appliedFilter.category;
-      return matchesTitle && matchesCategory;
-    });
-  }, [songList, appliedFilter]);
-
   const totalPages = Math.max(1, totalPagesFromApi);
-  const paginatedSongs = filteredSongs;
+  const paginatedSongs = songList;
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -238,21 +222,22 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
   };
 
   const applyFilter = () => {
-    setAppliedFilter(draftFilter);
+    const nextSearchText = draftFilter.englishTitle.trim();
+    onSearchTextChange(nextSearchText);
     setCurrentPage(1);
   };
 
   const resetFilter = () => {
-    const initialFilter = { title: "All", category: "All" };
+    const initialFilter = { englishTitle: "" };
     setDraftFilter(initialFilter);
-    setAppliedFilter(initialFilter);
     setCurrentPage(1);
+    onSearchTextChange("");
   };
 
   const goToPage = (pageNumber) => {
     const targetPage = Math.max(1, Math.min(totalPages, pageNumber));
     setCurrentPage(targetPage);
-    onFetchSongs(targetPage);
+    onFetchSongs(targetPage, searchText);
   };
 
   const openAddModal = () => {
@@ -354,33 +339,15 @@ function SongListPage({ songList, onSubmitSong, onDeleteSong, onFetchSongs, tota
                 className="filter-popover"
                 onSubmit={(event) => event.preventDefault()}
               >
-                <label htmlFor="filterTitle">Song Name</label>
-                <select
-                  id="filterTitle"
-                  name="title"
-                  value={draftFilter.title}
+                <label htmlFor="filterEnglishTitle">English Title</label>
+                <input
+                  id="filterEnglishTitle"
+                  name="englishTitle"
+                  type="text"
+                  value={draftFilter.englishTitle}
                   onChange={handleFilterChange}
-                >
-                  {availableTitles.map((title) => (
-                    <option key={title} value={title}>
-                      {title}
-                    </option>
-                  ))}
-                </select>
-
-                <label htmlFor="filterCategory">Category</label>
-                <select
-                  id="filterCategory"
-                  name="category"
-                  value={draftFilter.category}
-                  onChange={handleFilterChange}
-                >
-                  {availableCategories.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Search by English title"
+                />
 
                 <div className="filter-actions">
                   <button type="button" className="btn-primary" onClick={applyFilter}>
@@ -616,10 +583,15 @@ export default function App() {
   const [isNavCollapsed, setNavCollapsed] = useState(false);
   const [songList, setSongList] = useState(initialSongList);
   const [totalPages, setTotalPages] = useState(1);
+  const [currentSearchText, setCurrentSearchText] = useState("");
 
-  const fetchSongs = useCallback(async (pageNo = 1) => {
+  const fetchSongs = useCallback(async (pageNo = 1, searchText = "") => {
     try {
-      const response = await fetch(`${SONGS_API_URL}?pageNo=${pageNo}`);
+      const params = new URLSearchParams({
+        pageNo: String(pageNo),
+        searchText,
+      });
+      const response = await fetch(`${SONGS_API_URL}?${params.toString()}`);
       if (!response.ok) {
         throw new Error(`Failed to fetch songs. Status: ${response.status}`);
       }
@@ -665,8 +637,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    fetchSongs();
-  }, [fetchSongs]);
+    fetchSongs(1, currentSearchText);
+  }, [fetchSongs, currentSearchText]);
 
   const saveSong = async (payload) => {
     const response = await fetch(SAVE_SONG_API_URL, {
@@ -681,7 +653,7 @@ export default function App() {
       throw new Error(`Failed to save song. Status: ${response.status}`);
     }
 
-    await fetchSongs(1);
+    await fetchSongs(1, currentSearchText);
   };
 
   const deleteSong = async (songId) => {
@@ -692,7 +664,7 @@ export default function App() {
       throw new Error(`Failed to delete song. Status: ${response.status}`);
     }
 
-    await fetchSongs(1);
+    await fetchSongs(1, currentSearchText);
   };
 
   return (
@@ -707,7 +679,7 @@ export default function App() {
               setNavOpen={setNavOpen}
               isNavCollapsed={isNavCollapsed}
               setNavCollapsed={setNavCollapsed}
-              onSongsModuleClick={() => fetchSongs(1)}
+              onSongsModuleClick={() => fetchSongs(1, currentSearchText)}
             />
           }
         >
@@ -721,6 +693,8 @@ export default function App() {
                 onSubmitSong={saveSong}
                 onDeleteSong={deleteSong}
                 onFetchSongs={fetchSongs}
+                onSearchTextChange={setCurrentSearchText}
+                searchText={currentSearchText}
                 totalPagesFromApi={totalPages}
               />
             }
