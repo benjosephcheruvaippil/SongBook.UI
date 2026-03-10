@@ -365,14 +365,14 @@ function SongListPage({
         <div className="asset-table">
           <div className="table-head">
             <span>Title</span>
-            <span>Category</span>
-            <span>StanzaNos</span>
+            <span>English Title</span>
+            <span>Stanza Nos</span>
             <span>Action</span>
           </div>
           {paginatedSongs.map((song) => (
             <div className="table-row" key={song.id}>
               <span>{song.title}</span>
-              <span>{song.category}</span>
+              <span>{song.englishTitle}</span>
               <strong>{song.stanzaNos ?? song.stanzas.length}</strong>
               <div className="action-group">
                 <button
