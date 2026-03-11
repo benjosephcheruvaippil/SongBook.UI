@@ -509,7 +509,7 @@ p {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
@@ -517,7 +517,16 @@ p {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+  justify-content: center;
+  flex: 1;
 }
+
+/* .page-nav-group {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+} */
 
 .page-ellipsis {
   color: rgba(34, 67, 50, 0.6);
