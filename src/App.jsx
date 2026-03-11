@@ -248,6 +248,17 @@ function SongListPage({
     onFetchSongs(targetPage, searchText);
   };
 
+  const maxVisiblePages = 3;
+  const visiblePageStart = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+  const visiblePageEnd = Math.min(totalPages, visiblePageStart + maxVisiblePages - 1);
+  const adjustedPageStart = Math.max(1, visiblePageEnd - maxVisiblePages + 1);
+  const visiblePages = Array.from(
+    { length: visiblePageEnd - adjustedPageStart + 1 },
+    (_, index) => adjustedPageStart + index
+  );
+  const hasHiddenPagesBefore = adjustedPageStart > 1;
+  const hasHiddenPagesAfter = visiblePageEnd < totalPages;
+
   const openAddModal = () => {
     setFormData({ title: "", englishTitle: "", category: "", stanzasText: "" });
     setEditingSongId(null);
@@ -418,25 +429,32 @@ function SongListPage({
           <button
             type="button"
             className="btn-ghost page-btn"
+            onClick={() => goToPage(1)}
+            disabled={currentPage === 1}
+          >
+            First
+          </button>
+          <button
+            type="button"
+            className="btn-ghost page-btn"
             onClick={() => goToPage(currentPage - 1)}
             disabled={currentPage === 1}
           >
             Previous
           </button>
           <div className="page-numbers">
-            {Array.from({ length: totalPages }, (_, index) => {
-              const pageNumber = index + 1;
-              return (
-                <button
-                  type="button"
-                  key={pageNumber}
-                  className={`page-number ${currentPage === pageNumber ? "active" : ""}`}
-                  onClick={() => goToPage(pageNumber)}
-                >
-                  {pageNumber}
-                </button>
-              );
-            })}
+            {hasHiddenPagesBefore ? <span className="page-ellipsis">…</span> : null}
+            {visiblePages.map((pageNumber) => (
+              <button
+                type="button"
+                key={pageNumber}
+                className={`page-number ${currentPage === pageNumber ? "active" : ""}`}
+                onClick={() => goToPage(pageNumber)}
+              >
+                {pageNumber}
+              </button>
+            ))}
+            {hasHiddenPagesAfter ? <span className="page-ellipsis">…</span> : null}
           </div>
           <button
             type="button"
@@ -445,6 +463,14 @@ function SongListPage({
             disabled={currentPage === totalPages}
           >
             Next
+          </button>
+          <button
+            type="button"
+            className="btn-ghost page-btn"
+            onClick={() => goToPage(totalPages)}
+            disabled={currentPage === totalPages}
+          >
+            Last
           </button>
         </div>
       </div>

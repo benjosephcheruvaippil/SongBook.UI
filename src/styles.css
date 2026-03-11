@@ -519,6 +519,14 @@ p {
   flex-wrap: wrap;
 }
 
+.page-ellipsis {
+  color: rgba(34, 67, 50, 0.6);
+  font-size: 0.95rem;
+  letter-spacing: 2px;
+  padding: 0 2px;
+  user-select: none;
+}
+
 .page-number {
   border: 1px solid #c9ddd2;
   background: #fff;
