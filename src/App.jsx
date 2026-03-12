@@ -11,6 +11,7 @@ import {
   useParams,
 } from "react-router-dom";
 import HomePage from "./pages/Home";
+import Login from "./pages/Login";
 
 const SONGS_API_URL = "/api/SongBook/songs";
 const SAVE_SONG_API_URL = "/api/SongBook/saveSong";
@@ -701,6 +702,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/songs/:songId" element={<SongViewerPage songList={songList} />} />
+        <Route path="/login" element={<Login />} />
         <Route
           path="/"
           element={
