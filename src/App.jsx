@@ -10,6 +10,7 @@ import {
   useNavigate,
   useParams,
 } from "react-router-dom";
+import HomePage from "./pages/Home";
 
 const SONGS_API_URL = "/api/SongBook/songs";
 const SAVE_SONG_API_URL = "/api/SongBook/saveSong";
@@ -17,35 +18,6 @@ const DELETE_SONG_API_URL = "/api/SongBook/deleteSong";
 const DEFAULT_USER_NAME = "Ben Joseph";
 
 const initialSongList = [];
-
-function HomePage({ songList }) {
-  const navigate = useNavigate();
-
-  return (
-    <section className="page">
-      <div className="panel hero">
-        <div>
-          <p className="eyebrow">Song Collection</p>
-          <h1>Favs</h1>
-          <p className="muted">Click a song card to open full-screen stanza mode.</p>
-        </div>
-      </div>
-      <div className="song-grid">
-        {songList.map((song) => (
-          <button
-            key={song.id}
-            type="button"
-            className="song-card"
-            onClick={() => navigate(`/songs/${song.id}`)}
-          >
-            <span className="song-card-label">Song</span>
-            <strong>{song.title}</strong>
-          </button>
-        ))}
-      </div>
-    </section>
-  );
-}
 
 function SongViewerPage({ songList }) {
   const { songId } = useParams();
