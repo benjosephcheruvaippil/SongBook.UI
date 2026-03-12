@@ -521,13 +521,6 @@ p {
   flex: 1;
 }
 
-/* .page-nav-group {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  flex: 0 0 auto;
-} */
-
 .page-ellipsis {
   color: rgba(34, 67, 50, 0.6);
   font-size: 0.95rem;
@@ -693,6 +686,21 @@ p {
   .song-close {
     top: 14px;
     left: 14px;
+  }
+
+  .pagination {
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .page-nav-group {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .page-numbers {
+    order: 2;
+    justify-content: center;
   }
 }
 
