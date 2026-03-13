@@ -22,9 +22,11 @@ const initialSongList = [];
 
 function SongViewerPage({ songList }) {
   const { songId } = useParams();
+  const location = useLocation();
   const navigate = useNavigate();
   const [stanzaIndex, setStanzaIndex] = useState(0);
-  const song = songList.find((item) => String(item.id) === songId);
+  const stateSong = location.state?.song;
+  const song = stateSong ?? songList.find((item) => String(item.id) === songId);
 
   useEffect(() => {
     setStanzaIndex(0);
@@ -291,13 +293,13 @@ function SongListPage({
   };
 
   const handlePresentSong = (song) => {
-    const stanzas = song?.stanzas;
+    const stanzas = Array.isArray(song?.stanzas) ? song.stanzas : [];
     if (stanzas.length === 0) {
       alert("This song has no valid stanzas to present.");
       return;
     }
 
-    navigate(`/songs/${song.id}`);
+    navigate(`/songs/${song.id}`, { state: { song } });
   };
 
   return (
