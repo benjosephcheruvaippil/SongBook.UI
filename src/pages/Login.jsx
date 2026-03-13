@@ -8,9 +8,9 @@ const Login = () => {
     const [errorMessage, setErrorMessage] = useState('');
     const navigate = useNavigate();
 
-    useEffect(() => {
-        localStorage.removeItem('loginToken');
-    }, []);
+    // useEffect(() => {
+    //     localStorage.removeItem('loginToken');
+    // }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

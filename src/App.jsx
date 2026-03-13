@@ -591,7 +591,8 @@ function AppLayout({
   );
 }
 
-export default function App() {
+function AppContainer() {
+  const navigate = useNavigate();
   const [isNavOpen, setNavOpen] = useState(false);
   const [isNavCollapsed, setNavCollapsed] = useState(false);
   const [songList, setSongList] = useState(initialSongList);
@@ -614,7 +615,16 @@ export default function App() {
         pageNo: String(pageNo),
         searchText,
       });
-      const response = await fetch(`${SONGS_API_URL}?${params.toString()}`);
+      const loginToken = localStorage.getItem("loginToken");
+      const response = await fetch(`${SONGS_API_URL}?${params.toString()}`, {
+        headers: loginToken ? { Authorization: `Bearer ${loginToken}` } : undefined,
+      });
+      if (response.status === 401) {
+        // setSongList([]);
+        // setTotalPages(1);
+        navigate("/login", { replace: true });
+        return;
+      }
       if (!response.ok) {
         throw new Error(`Failed to fetch songs. Status: ${response.status}`);
       }
@@ -659,7 +669,7 @@ export default function App() {
     } finally {
       endRequest();
     }
-  }, [endRequest, startRequest]);
+  }, [endRequest, navigate, startRequest]);
 
   useEffect(() => {
     fetchSongs(1, currentSearchText);
@@ -699,43 +709,49 @@ export default function App() {
   };
 
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/songs/:songId" element={<SongViewerPage songList={songList} />} />
-        <Route path="/login" element={<Login />} />
+    <Routes>
+      <Route path="/songs/:songId" element={<SongViewerPage songList={songList} />} />
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/"
+        element={
+          <AppLayout
+            isNavOpen={isNavOpen}
+            setNavOpen={setNavOpen}
+            isNavCollapsed={isNavCollapsed}
+            setNavCollapsed={setNavCollapsed}
+            onSongsModuleClick={() => fetchSongs(1, currentSearchText)}
+            isLoading={pendingRequests > 0}
+          />
+        }
+      >
+        <Route index element={<HomePage songList={songList} />} />
+        <Route path="home" element={<HomePage songList={songList} />} />
         <Route
-          path="/"
+          path="songList"
           element={
-            <AppLayout
-              isNavOpen={isNavOpen}
-              setNavOpen={setNavOpen}
-              isNavCollapsed={isNavCollapsed}
-              setNavCollapsed={setNavCollapsed}
-              onSongsModuleClick={() => fetchSongs(1, currentSearchText)}
-              isLoading={pendingRequests > 0}
+            <SongListPage
+              songList={songList}
+              onSubmitSong={saveSong}
+              onDeleteSong={deleteSong}
+              onFetchSongs={fetchSongs}
+              onSearchTextChange={setCurrentSearchText}
+              searchText={currentSearchText}
+              totalPagesFromApi={totalPages}
             />
           }
-        >
-          <Route index element={<HomePage songList={songList} />} />
-          <Route path="home" element={<HomePage songList={songList} />} />
-          <Route
-            path="songList"
-            element={
-              <SongListPage
-                songList={songList}
-                onSubmitSong={saveSong}
-                onDeleteSong={deleteSong}
-                onFetchSongs={fetchSongs}
-                onSearchTextChange={setCurrentSearchText}
-                searchText={currentSearchText}
-                totalPagesFromApi={totalPages}
-              />
-            }
-          />
-          <Route path="assets" element={<Navigate to="/songList" replace />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Route>
-      </Routes>
+        />
+        <Route path="assets" element={<Navigate to="/songList" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Route>
+    </Routes>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AppContainer />
     </BrowserRouter>
   );
 }
