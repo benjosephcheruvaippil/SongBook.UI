@@ -15,12 +15,16 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        const LOGIN_API_URL = "/api/SongBook/login";
+
         try {
             const response = await fetch(
-                `https://networthtrackerapi20240213185304.azurewebsites.net/api/Auth/getToken?email=${encodeURIComponent(userName)}&password=${encodeURIComponent(password)}`,
+            `${LOGIN_API_URL}?userName=${encodeURIComponent(userName)}&password=${encodeURIComponent(password)}`,
                 {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
+                    method: "GET",
+                    headers: {
+                    "Content-Type": "application/json",
+                    },
                 }
             );
 
@@ -29,7 +33,7 @@ const Login = () => {
                 console.log("Login successful:", result);
 
                 localStorage.setItem('loginToken', result.token);
-                navigate('/home');
+                navigate('/');
             } else {
                 localStorage.removeItem('loginToken');
                 setErrorMessage('Invalid username or password');
