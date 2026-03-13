@@ -679,10 +679,12 @@ function AppContainer() {
 
   const saveSong = async (payload) => {
     startRequest();
+    const loginToken = localStorage.getItem("loginToken");
     const response = await fetch(SAVE_SONG_API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...(loginToken ? { Authorization: `Bearer ${loginToken}` } : {}),
       },
       body: JSON.stringify(payload),
     });
@@ -698,8 +700,10 @@ function AppContainer() {
 
   const deleteSong = async (songId) => {
     startRequest();
+    const loginToken = localStorage.getItem("loginToken");
     const response = await fetch(`${DELETE_SONG_API_URL}?songId=${encodeURIComponent(songId)}`, {
       method: "DELETE",
+      headers: loginToken ? { Authorization: `Bearer ${loginToken}` } : undefined,
     });
     if (!response.ok) {
       endRequest();
