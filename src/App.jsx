@@ -731,8 +731,8 @@ function AppContainer() {
           />
         }
       >
-        <Route index element={<HomePage songList={songList} />} />
-        <Route path="home" element={<HomePage songList={songList} />} />
+        <Route index element={<HomePage />} />
+        <Route path="home" element={<HomePage />} />
         <Route
           path="songList"
           element={
