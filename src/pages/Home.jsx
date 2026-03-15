@@ -15,10 +15,12 @@ export default function HomePage() {
       setErrorMessage("");
 
       try {
+        const loginToken = localStorage.getItem("loginToken");
         const response = await fetch("/api/SongBook/homPageSongs", {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            ...(loginToken ? { Authorization: `Bearer ${loginToken}` } : {}),
           },
         });
 
