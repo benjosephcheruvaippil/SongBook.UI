@@ -22,6 +22,10 @@ export default function HomePage() {
           },
         });
 
+        if (response.status === 401) {
+        navigate("/login", { replace: true });
+        return;
+        }
         if (!response.ok) {
           throw new Error(`Request failed with status ${response.status}`);
         }
