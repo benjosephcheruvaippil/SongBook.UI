@@ -161,12 +161,8 @@ function SongListPage({
   const paginatedSongs = songList;
 
   useEffect(() => {
-    const initialFilter = { englishTitle: "" };
-    setDraftFilter(initialFilter);
-    setCurrentPage(1);
-    onSearchTextChange("");
-    onFetchSongs(1, "");
-  }, [onFetchSongs, onSearchTextChange]);
+    onFetchSongs(currentPage, searchText ?? "");
+  }, [currentPage, onFetchSongs, searchText]);
 
   useEffect(() => {
     if (currentPage > totalPages) {
@@ -220,7 +216,6 @@ function SongListPage({
   const goToPage = (pageNumber) => {
     const targetPage = Math.max(1, Math.min(totalPages, pageNumber));
     setCurrentPage(targetPage);
-    onFetchSongs(targetPage, searchText);
   };
 
   const maxVisiblePages = 3;
@@ -532,7 +527,6 @@ function AppLayout({
   setNavOpen,
   isNavCollapsed,
   setNavCollapsed,
-  onSongsModuleClick,
   isLoading,
 }) {
   const location = useLocation();
@@ -567,14 +561,12 @@ function AppLayout({
               to="/"
               end
               className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
-              onClick={onSongsModuleClick}
             >
               Home
             </NavLink>
             <NavLink
               to="/songList"
               className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}
-              onClick={onSongsModuleClick}
             >
               Song List
             </NavLink>
@@ -673,10 +665,6 @@ function AppContainer() {
     }
   }, [endRequest, navigate, startRequest]);
 
-  useEffect(() => {
-    fetchSongs(1, currentSearchText);
-  }, [fetchSongs, currentSearchText]);
-
   const saveSong = async (payload) => {
     startRequest();
     const loginToken = localStorage.getItem("loginToken");
@@ -726,7 +714,6 @@ function AppContainer() {
             setNavOpen={setNavOpen}
             isNavCollapsed={isNavCollapsed}
             setNavCollapsed={setNavCollapsed}
-            onSongsModuleClick={() => fetchSongs(1, currentSearchText)}
             isLoading={pendingRequests > 0}
           />
         }
